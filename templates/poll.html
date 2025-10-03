@@ -11,7 +11,7 @@
 
 <div class="card mb-4">
   <div class="card-header bg-primary text-white">
-    <h4 class="mb-0">{{ poll.question }}</h4>
+    <h5 class="mb-0">{{ poll.question }}</h5>
   </div>
   <div class="card-body">
     {% if current_user.role == "student" and poll.is_active %}

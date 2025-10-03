@@ -46,10 +46,18 @@
                 <p class="card-text text-muted">
                   생성일: {{ classroom.created_at.strftime('%Y-%m-%d %H:%M') }}
                 </p>
-                <a href="{{ url_for('classroom_view', classroom_id=classroom.id) }}" 
-                   class="btn btn-primary">
-                  입장하기 →
-                </a>
+                <div class="d-flex justify-content-between align-items-center">
+                  <a href="{{ url_for('classroom_view', classroom_id=classroom.id) }}" 
+                    class="btn btn-primary btn-sm">
+                    입장하기 →
+                  </a>
+                  <!-- 삭제 버튼 폼 추가 -->
+                  <!-- confirm() 대신 커스텀 모달 UI를 사용해야 하지만, 빠른 적용을 위해 임시로 confirm() 사용 -->
+                  <form method="POST" action="{{ url_for('delete_classroom', classroom_id=classroom.id) }}" 
+                      onsubmit="return confirm('{{ classroom.name }} 클래스룸을 정말 삭제하시겠습니까? 관련 투표 데이터도 모두 삭제됩니다.')">
+                    <button type="submit" class="btn btn-danger btn-sm">삭제</button>
+                  </form>
+                </div>
               </div>
             </div>
           </div>

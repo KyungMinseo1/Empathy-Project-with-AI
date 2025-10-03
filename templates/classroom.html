@@ -4,108 +4,270 @@
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-  <div>
-    <h2>📚 {{ classroom.name }}</h2>
-    <p class="text-muted mb-0">
-      클래스룸 코드: <span class="badge bg-success">{{ classroom.code }}</span>
-    </p>
-  </div>
-  <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">← 대시보드로</a>
+    <div>
+        <h2>📚 {{ classroom.name }}</h2>
+        <p class="text-muted mb-0">
+            클래스룸 코드: <span class="badge bg-success">{{ classroom.code }}</span>
+        </p>
+    </div>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">← 대시보드로</a>
 </div>
 
 {% if current_user.role == "professor" %}
-  <!-- 투표 생성 폼 (교수자만) -->
-  <div class="card mb-4">
+<!-- 투표 생성 폼 (교수자만) -->
+<div class="card mb-4">
     <div class="card-header bg-primary text-white">
-      <h5 class="mb-0">새 투표 만들기</h5>
+        <h5 class="mb-0">새 투표 만들기</h5>
     </div>
     <div class="card-body">
-      <form method="POST" action="{{ url_for('create_poll', classroom_id=classroom.id) }}" id="pollForm">
-        <div class="mb-3">
-          <label for="question" class="form-label">질문</label>
-          <input type="text" class="form-control" id="question" name="question" required
-                 placeholder="학생들에게 물어볼 질문을 입력하세요">
-        </div>
-        
-        <div class="mb-3">
-          <label class="form-label">선택지</label>
-          <div id="optionsContainer">
-            <div class="input-group mb-2">
-              <span class="input-group-text">1</span>
-              <input type="text" class="form-control" name="options[]" required placeholder="첫 번째 선택지">
+        <!-- onsubmit 이벤트 추가 -->
+        <form method="POST" action="{{ url_for('create_poll', classroom_id=classroom.id) }}" id="pollForm" onsubmit="return validateForm(event);">
+            <!-- Flexbox 컨테이너: 좌우 분할 시작 -->
+            <div class="d-flex flex-column flex-md-row">
+                
+                <!-- 왼쪽 섹션: 수동 입력 및 AI 결과 채우기 -->
+                <div class="flex-grow-1 me-md-3 mb-3 mb-md-0">
+                    <h6>📌 투표 내용</h6>
+                    <hr>
+                    <div class="mb-3">
+                        <label for="question" class="form-label">질문</label>
+                        <input type="text" class="form-control" id="question" name="question" 
+                               placeholder="학생들에게 물어볼 질문을 입력하세요"
+                               value="{{ initial_question if initial_question is defined and initial_question else '' }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">선택지</label>
+                        <div id="optionsContainer">
+                            {% if initial_options is defined and initial_options %}
+                                <!-- AI가 생성한 선택지로 동적 채우기 -->
+                                {% for option in initial_options %}
+                                    <div class="input-group mb-2 option-group">
+                                        <span class="input-group-text">{{ loop.index }}</span>
+                                        <input type="text" class="form-control" name="options[]" 
+                                               value="{{ option }}" placeholder="선택지 {{ loop.index }}">
+                                        {% if loop.index > 2 %}
+                                            <!-- AI 생성 시 3번째 옵션부터는 제거 버튼 표시 -->
+                                            <button type="button" class="btn btn-outline-danger remove-option" onclick="removeOption(this)">X</button>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <!-- 기본 선택지 2개 -->
+                                <div class="input-group mb-2 option-group">
+                                    <span class="input-group-text">1</span>
+                                    <input type="text" class="form-control" name="options[]" placeholder="첫 번째 선택지">
+                                </div>
+                                <div class="input-group mb-2 option-group">
+                                    <span class="input-group-text">2</span>
+                                    <input type="text" class="form-control" name="options[]" placeholder="두 번째 선택지">
+                                </div>
+                            {% endif %}
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="addOption">
+                            + 선택지 추가
+                        </button>
+                    </div>
+                    
+                    <!-- 최종 제출 버튼 (AI 생성 후에도 이 버튼으로 저장해야 함) -->
+                    <button type="submit" name="action_type" value="final" class="btn btn-primary w-100 mt-3" id="finalSubmitBtn">투표 최종 제출</button>
+                </div>
+
+                <!-- 오른쪽 섹션: AI 생성 도구 -->
+                <div class="flex-grow-1 ms-md-3 border-start ps-md-3">
+                    <h6>🤖 AI 생성 도구</h6>
+                    <hr>
+                    <div class="mb-3">
+                        <label for="topic" class="form-label">주제 입력</label>
+                        <input type="text" class="form-control" id="topic" name="topic"
+                               placeholder="예: 학교 폭력, 환경 오염">
+                    </div>
+                    <!-- AI 생성 요청 버튼 -->
+                    <button type="submit" name="action_type" value="create" class="btn btn-success w-100" id="aiCreateBtn">🪄 AI로 투표 초안 생성</button>
+                </div>
             </div>
-            <div class="input-group mb-2">
-              <span class="input-group-text">2</span>
-              <input type="text" class="form-control" name="options[]" required placeholder="두 번째 선택지">
-            </div>
-          </div>
-          <button type="button" class="btn btn-sm btn-outline-secondary" id="addOption">
-            + 선택지 추가
-          </button>
-        </div>
-        
-        <button type="submit" class="btn btn-primary">투표 생성</button>
-      </form>
+            <!-- Flexbox 컨테이너: 좌우 분할 끝 -->
+        </form>
     </div>
-  </div>
+</div>
 {% endif %}
 
 <!-- 투표 목록 -->
 <div class="card">
-  <div class="card-header">
-    <h5 class="mb-0">투표 목록</h5>
-  </div>
-  <div class="card-body">
-    {% if polls %}
-      <div class="list-group" id="pollsList">
-        {% for poll in polls %}
-        <a href="{{ url_for('poll_view', poll_id=poll.id) }}" 
-           class="list-group-item list-group-item-action">
-          <div class="d-flex w-100 justify-content-between">
-            <h6 class="mb-1">{{ poll.question }}</h6>
-            <small class="text-muted">{{ poll.created_at.strftime('%m/%d %H:%M') }}</small>
-          </div>
-          {% if poll.is_active %}
-            <span class="badge bg-success">진행중</span>
-          {% else %}
-            <span class="badge bg-secondary">종료됨</span>
-          {% endif %}
-        </a>
-        {% endfor %}
-      </div>
-    {% else %}
-      <p class="text-muted">아직 생성된 투표가 없습니다.</p>
-    {% endif %}
-  </div>
+    <div class="card-header">
+        <h5 class="mb-0">투표 목록</h5>
+    </div>
+    <div class="card-body">
+        {% if polls %}
+            <div class="list-group" id="pollsList">
+                {% for poll in polls %}
+                <a href="{{ url_for('poll_view', poll_id=poll.id) }}" 
+                   class="list-group-item list-group-item-action">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">{{ poll.question }}</h6>
+                        <small class="text-muted">{{ poll.created_at.strftime('%m/%d %H:%M') }}</small>
+                    </div>
+                    {% if poll.is_active %}
+                        <span class="badge bg-success">진행중</span>
+                    {% else %}
+                        <span class="badge bg-secondary">종료됨</span>
+                    {% endif %}
+                </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted">아직 생성된 투표가 없습니다.</p>
+        {% endif %}
+    </div>
 </div>
+
 
 <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 <script>
-  const socket = io();
-  
-  // 클래스룸 입장
-  socket.emit('join', {classroom_id: {{ classroom.id }}});
-  
-  // 새 투표 알림
-  socket.on('new_poll', function(data) {
-    location.reload(); // 간단하게 페이지 새로고침
-  });
-  
-  // 선택지 추가 기능
-  {% if current_user.role == "professor" %}
-  let optionCount = 2;
-  document.getElementById('addOption').addEventListener('click', function() {
-    optionCount++;
-    const container = document.getElementById('optionsContainer');
-    const div = document.createElement('div');
-    div.className = 'input-group mb-2';
-    div.innerHTML = `
-      <span class="input-group-text">${optionCount}</span>
-      <input type="text" class="form-control" name="options[]" required placeholder="${optionCount}번째 선택지">
-      <button type="button" class="btn btn-outline-danger" onclick="this.parentElement.remove()">×</button>
-    `;
-    container.appendChild(div);
-  });
-  {% endif %}
+    const socket = io();
+    
+    // 클래스룸 입장
+    socket.emit('join', {classroom_id: {{ classroom.id }}});
+    
+    // 새 투표 알림
+    socket.on('new_poll', function(data) {
+        // 투표가 생성되면 목록을 업데이트하기 위해 페이지를 새로고침합니다.
+        location.reload(); 
+    });
+    
+    // =========================================================
+    // 교수자 전용: 투표 생성 폼 로직 (유효성 검사 및 옵션 관리)
+    // =========================================================
+    {% if current_user.role == "professor" %}
+    
+    // 현재 눌린 버튼의 action_type을 저장할 변수
+    let currentActionType = '';
+
+    // 폼 제출 전, 어떤 버튼이 눌렸는지 확인하는 리스너
+    document.getElementById('pollForm').addEventListener('click', function(e) {
+        if (e.target.name === 'action_type') {
+            currentActionType = e.target.value;
+        }
+    });
+
+    // 폼 유효성 검사 함수 (onsubmit에서 호출됨)
+    function validateForm(event) {
+        if (currentActionType === 'final') {
+            // 1. '최종 제출' (final) 버튼을 눌렀을 때: 질문과 선택지 유효성 검사
+            
+            const questionInput = document.getElementById('question');
+            if (questionInput.value.trim() === '') {
+                alert('질문 내용을 입력해주세요.');
+                questionInput.focus();
+                return false;
+            }
+
+            const optionInputs = document.querySelectorAll('#optionsContainer input[name="options[]"]');
+            let allOptionsFilled = true;
+            // 빈 옵션 필드가 있는지 확인
+            optionInputs.forEach(input => {
+                if (input.value.trim() === '') {
+                    allOptionsFilled = false;
+                    input.focus();
+                }
+            });
+
+            if (!allOptionsFilled) {
+                alert('모든 선택지 내용을 채워주세요.');
+                return false;
+            }
+            // 모든 필드가 채워져 있으면 제출 허용
+            return true; 
+            
+        } else if (currentActionType === 'create') {
+            // 2. 'AI 생성' (create) 버튼을 눌렀을 때: 주제(topic) 유효성 검사
+
+            const topicInput = document.getElementById('topic');
+            if (topicInput.value.trim() === '') {
+                alert('AI 생성 주제를 입력해주세요.');
+                topicInput.focus();
+                return false;
+            }
+            // 주제가 채워져 있으면 제출 허용 (AI 생성 요청)
+            return true;
+            
+        } else {
+            // 기타 예외 상황 방지
+            return false;
+        }
+    }
+
+    // 옵션 추가 기능
+    document.getElementById('addOption').addEventListener('click', function() {
+        const container = document.getElementById('optionsContainer');
+        const count = container.querySelectorAll('.option-group').length + 1;
+
+        const newOption = document.createElement('div');
+        newOption.className = 'input-group mb-2 option-group';
+        newOption.innerHTML = `
+            <span class="input-group-text">${count}</span>
+            <input type="text" class="form-control" name="options[]" placeholder="선택지 ${count}">
+            <button type="button" class="btn btn-outline-danger remove-option" onclick="removeOption(this)">X</button>
+        `;
+        container.appendChild(newOption);
+        updateOptionIndices();
+    });
+
+    // 옵션 제거 기능
+    function removeOption(button) {
+        // 최소 2개 옵션 유지를 위해 그룹 개수 확인
+        const container = document.getElementById('optionsContainer');
+        const groups = container.querySelectorAll('.option-group');
+        if (groups.length <= 2) {
+            alert('투표에는 최소 2개의 선택지가 필요합니다.');
+            return;
+        }
+        
+        const group = button.closest('.option-group');
+        group.remove();
+        updateOptionIndices();
+    }
+    
+    // 옵션 번호 업데이트 기능 및 최소 2개 유지 로직
+    function updateOptionIndices() {
+        const container = document.getElementById('optionsContainer');
+        let groups = container.querySelectorAll('.option-group');
+        
+        // --- 최소 2개 옵션 보장 로직 (AI 생성 후 옵션이 부족할 경우 대비) ---
+        while (groups.length < 2) {
+             const newOption = document.createElement('div');
+             newOption.className = 'input-group mb-2 option-group';
+             newOption.innerHTML = `
+                 <span class="input-group-text">${groups.length + 1}</span>
+                 <input type="text" class="form-control" name="options[]" placeholder="선택지 ${groups.length + 1}">
+                 <button type="button" class="btn btn-outline-danger remove-option" onclick="removeOption(this)">X</button>
+             `;
+             container.appendChild(newOption);
+             groups = container.querySelectorAll('.option-group'); // groups 목록 새로고침
+        }
+        // ------------------------------------------------------------------
+
+        groups.forEach((group, index) => {
+            group.querySelector('.input-group-text').textContent = index + 1;
+            
+            // 1, 2번 옵션은 제거 버튼 숨기기 (필수 2개 유지)
+            const removeBtn = group.querySelector('.remove-option');
+            if (removeBtn) {
+                if (index < 2) {
+                    removeBtn.style.display = 'none';
+                } else {
+                    removeBtn.style.display = 'flex'; // flex로 보여주기
+                }
+            }
+            // input의 required 속성은 JS에서 처리하므로 제거
+            group.querySelector('input').removeAttribute('required'); 
+        });
+    }
+
+    // 페이지 로드 시 인덱스 초기화 및 이벤트 리스너 설정
+    document.addEventListener('DOMContentLoaded', function() {
+        updateOptionIndices();
+    });
+    {% endif %}
 </script>
 {% endblock %}
