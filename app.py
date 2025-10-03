@@ -16,7 +16,7 @@ load_dotenv()
 
 app = Flask(__name__)
 # SECRET_KEY를 환경변수에서 가져오고, 없으면 fallback 사용
-app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "dev_secret_key")
+app.config['SECRET_KEY'] = os.getenv("SECRET_KEYS", "dev_secret_key")
 
 # Heroku PostgreSQL 환경변수 읽기 (로컬 테스트 시 .env에 DATABASE_URL 설정 필요)
 db_url = os.getenv('DATABASE_URL')
