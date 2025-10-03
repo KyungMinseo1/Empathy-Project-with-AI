@@ -241,9 +241,7 @@ def create_poll(classroom_id):
     if request.form.get('action_type') == 'create':
         topic = request.form["topic"]
         try:
-            ai_response_str = prompt.generate_situation('gpt-4o-mini', topic)
-            print(ai_response_str)
-            
+            ai_response_str = prompt.generate_situation(topic)            
             output_list = ast.literal_eval(ai_response_str)
             
             # AI 결과와 함께 템플릿을 redirect로 전달 (URL 파라미터로 전달)
