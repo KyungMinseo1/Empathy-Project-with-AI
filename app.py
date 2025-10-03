@@ -20,11 +20,15 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev_secret_key')
 db_url = os.environ.get('JAWSDB_MARIA_URL')
 
 # SQLAlchemy가 PyMySQL 드라이버로 연결하도록 변경
-if db_url.startswith("mysql://"):
+connect_args = {}
+if db_url and db_url.startswith("mysql://"):
     db_url = db_url.replace("mysql://", "mysql+pymysql://", 1)
+    connect_args = {'connect_timeout': 10} # 연결 시간 10초로 증가
 
 app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# SQLAlchemy 엔진에 connect_args 전달
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {'connect_args': connect_args}
 
 db = SQLAlchemy(app)
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')  # 배포용
