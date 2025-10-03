@@ -240,11 +240,8 @@ def create_poll(classroom_id):
     # 'create' 버튼을 눌렀을 경우 (AI 생성 요청)
     if request.form.get('action_type') == 'create':
         topic = request.form["topic"]
-        
-        # 'gpt-5-mini' API 호출 및 결과 파싱 (prompt.py가 존재한다고 가정)
         try:
-            # prompt.generate_situation이 리스트 형태의 문자열을 반환한다고 가정
-            ai_response_str = prompt.generate_situation('gpt-5-mini', topic)
+            ai_response_str = prompt.generate_situation('gpt-4o-mini', topic)
             
             output_list = ast.literal_eval(ai_response_str)
             
