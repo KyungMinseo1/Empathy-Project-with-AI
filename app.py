@@ -242,6 +242,7 @@ def create_poll(classroom_id):
         topic = request.form["topic"]
         try:
             ai_response_str = prompt.generate_situation('gpt-4o-mini', topic)
+            print(ai_response_str)
             
             output_list = ast.literal_eval(ai_response_str)
             

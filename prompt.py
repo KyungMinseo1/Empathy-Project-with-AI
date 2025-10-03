@@ -43,3 +43,7 @@ def generate_situation(model_name, topic):
     )
   
   return response.output_text
+
+if __name__=="__main__":
+  result = generate_situation('gpt-4o-mini', '지우개 훔치기')
+  print(result)
