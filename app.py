@@ -74,6 +74,12 @@ class Vote(db.Model):
     poll = db.relationship('Poll', backref='votes')
 
 # ===========================
+# 데이터베이스 초기화
+# ===========================
+with app.app_context():
+    db.create_all()
+
+# ===========================
 # 로그인 관련
 # ===========================
 @login_manager.user_loader
