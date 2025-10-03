@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}{{ classroom.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2>📚 {{ classroom.name }}</h2>
+    <p class="text-muted mb-0">
+      클래스룸 코드: <span class="badge bg-success">{{ classroom.code }}</span>
+    </p>
+  </div>
+  <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">← 대시보드로</a>
+</div>
+
+{% if current_user.role == "professor" %}
+  <!-- 투표 생성 폼 (교수자만) -->
+  <div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">새 투표 만들기</h5>
+    </div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('create_poll', classroom_id=classroom.id) }}" id="pollForm">
+        <div class="mb-3">
+          <label for="question" class="form-label">질문</label>
+          <input type="text" class="form-control" id="question" name="question" required
+                 placeholder="학생들에게 물어볼 질문을 입력하세요">
+        </div>
+        
+        <div class="mb-3">
+          <label class="form-label">선택지</label>
+          <div id="optionsContainer">
+            <div class="input-group mb-2">
+              <span class="input-group-text">1</span>
+              <input type="text" class="form-control" name="options[]" required placeholder="첫 번째 선택지">
+            </div>
+            <div class="input-group mb-2">
+              <span class="input-group-text">2</span>
+              <input type="text" class="form-control" name="options[]" required placeholder="두 번째 선택지">
+            </div>
+          </div>
+          <button type="button" class="btn btn-sm btn-outline-secondary" id="addOption">
+            + 선택지 추가
+          </button>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">투표 생성</button>
+      </form>
+    </div>
+  </div>
+{% endif %}
+
+<!-- 투표 목록 -->
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0">투표 목록</h5>
+  </div>
+  <div class="card-body">
+    {% if polls %}
+      <div class="list-group" id="pollsList">
+        {% for poll in polls %}
+        <a href="{{ url_for('poll_view', poll_id=poll.id) }}" 
+           class="list-group-item list-group-item-action">
+          <div class="d-flex w-100 justify-content-between">
+            <h6 class="mb-1">{{ poll.question }}</h6>
+            <small class="text-muted">{{ poll.created_at.strftime('%m/%d %H:%M') }}</small>
+          </div>
+          {% if poll.is_active %}
+            <span class="badge bg-success">진행중</span>
+          {% else %}
+            <span class="badge bg-secondary">종료됨</span>
+          {% endif %}
+        </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-muted">아직 생성된 투표가 없습니다.</p>
+    {% endif %}
+  </div>
+</div>
+
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script>
+  const socket = io();
+  
+  // 클래스룸 입장
+  socket.emit('join', {classroom_id: {{ classroom.id }}});
+  
+  // 새 투표 알림
+  socket.on('new_poll', function(data) {
+    location.reload(); // 간단하게 페이지 새로고침
+  });
+  
+  // 선택지 추가 기능
+  {% if current_user.role == "professor" %}
+  let optionCount = 2;
+  document.getElementById('addOption').addEventListener('click', function() {
+    optionCount++;
+    const container = document.getElementById('optionsContainer');
+    const div = document.createElement('div');
+    div.className = 'input-group mb-2';
+    div.innerHTML = `
+      <span class="input-group-text">${optionCount}</span>
+      <input type="text" class="form-control" name="options[]" required placeholder="${optionCount}번째 선택지">
+      <button type="button" class="btn btn-outline-danger" onclick="this.parentElement.remove()">×</button>
+    `;
+    container.appendChild(div);
+  });
+  {% endif %}
+</script>
+{% endblock %}

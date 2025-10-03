@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}대시보드{% endblock %}
+
+{% block content %}
+{% if role == "professor" %}
+  <h2>📘 교수자 대시보드</h2>
+  <p>클래스룸을 만들고 학생들과 실시간 투표를 진행하세요.</p>
+  
+  <!-- 클래스룸 생성 -->
+  <div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+      <h5 class="mb-0">새 클래스룸 만들기</h5>
+    </div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('create_classroom') }}">
+        <div class="mb-3">
+          <label for="name" class="form-label">클래스룸 이름</label>
+          <input type="text" class="form-control" id="name" name="name" required 
+                 placeholder="예: 2024-2 인성교육">
+        </div>
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-plus-circle"></i> 클래스룸 생성
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 내 클래스룸 목록 -->
+  <div class="card">
+    <div class="card-header bg-secondary text-white">
+      <h5 class="mb-0">내 클래스룸</h5>
+    </div>
+    <div class="card-body">
+      {% if classrooms %}
+        <div class="row">
+          {% for classroom in classrooms %}
+          <div class="col-md-6 mb-3">
+            <div class="card border-primary">
+              <div class="card-body">
+                <h5 class="card-title">{{ classroom.name }}</h5>
+                <p class="card-text">
+                  <strong>클래스룸 코드:</strong> 
+                  <span class="badge bg-success fs-6">{{ classroom.code }}</span>
+                </p>
+                <p class="card-text text-muted">
+                  생성일: {{ classroom.created_at.strftime('%Y-%m-%d %H:%M') }}
+                </p>
+                <a href="{{ url_for('classroom_view', classroom_id=classroom.id) }}" 
+                   class="btn btn-primary">
+                  입장하기 →
+                </a>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-muted">아직 생성된 클래스룸이 없습니다.</p>
+      {% endif %}
+    </div>
+  </div>
+
+{% else %}
+  <h2>👩‍🎓 학생 대시보드</h2>
+  <p>교수자가 만든 클래스룸에 참여하여 투표에 참여하세요.</p>
+  
+  <!-- 클래스룸 입장 -->
+  <div class="card">
+    <div class="card-header bg-success text-white">
+      <h5 class="mb-0">클래스룸 입장</h5>
+    </div>
+    <div class="card-body">
+      <form method="POST" action="{{ url_for('join_classroom') }}">
+        <div class="mb-3">
+          <label for="code" class="form-label">클래스룸 코드</label>
+          <input type="text" class="form-control form-control-lg text-center" 
+                 id="code" name="code" required 
+                 placeholder="6자리 코드 입력"
+                 maxlength="6"
+                 style="letter-spacing: 0.3em; text-transform: uppercase;">
+        </div>
+        <button type="submit" class="btn btn-success btn-lg w-100">
+          입장하기 🚪
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="alert alert-info mt-4">
+    <strong>💡 팁:</strong> 교수자로부터 받은 6자리 클래스룸 코드를 입력하세요.
+  </div>
+{% endif %}
+{% endblock %}

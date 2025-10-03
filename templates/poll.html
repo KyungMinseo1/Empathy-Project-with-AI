@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}투표: {{ poll.question }}{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+  <a href="{{ url_for('classroom_view', classroom_id=classroom.id) }}" class="btn btn-secondary">
+    ← 클래스룸으로
+  </a>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header bg-primary text-white">
+    <h4 class="mb-0">{{ poll.question }}</h4>
+  </div>
+  <div class="card-body">
+    {% if current_user.role == "student" and poll.is_active %}
+      <!-- 학생 투표 폼 -->
+      <form method="POST" action="{{ url_for('submit_vote', poll_id=poll.id) }}">
+        <div class="mb-3">
+          {% for i in range(options|length) %}
+          <div class="form-check mb-2">
+            <input class="form-check-input" type="radio" name="option" id="option{{ i }}" 
+                   value="{{ i }}" required
+                   {% if existing_vote and existing_vote.option_index == i %}checked{% endif %}>
+            <label class="form-check-label fs-5" for="option{{ i }}">
+              {{ options[i] }}
+            </label>
+          </div>
+          {% endfor %}
+        </div>
+        
+        {% if existing_vote %}
+          <button type="submit" class="btn btn-warning btn-lg">투표 변경하기</button>
+          <span class="text-muted ms-2">현재 투표: {{ options[existing_vote.option_index] }}</span>
+        {% else %}
+          <button type="submit" class="btn btn-success btn-lg">투표하기</button>
+        {% endif %}
+      </form>
+    {% elif not poll.is_active %}
+      <div class="alert alert-secondary">
+        이 투표는 종료되었습니다.
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- 투표 결과 -->
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0">실시간 투표 결과</h5>
+  </div>
+  <div class="card-body" id="resultsContainer">
+    {% if results %}
+      {% for i in range(options|length) %}
+      <div class="mb-3">
+        <div class="d-flex justify-content-between mb-1">
+          <span><strong>{{ options[i] }}</strong></span>
+          <span class="badge bg-primary" id="count-{{ i }}">
+            {{ results.get(i, 0) }}표
+          </span>
+        </div>
+        
+        {% set total = results.values()|sum %}
+        {% set count = results.get(i, 0) %}
+        {% set percentage = (count / total * 100) if total > 0 else 0 %}
+        
+        <div class="progress" style="height: 30px;">
+          <div class="progress-bar" role="progressbar" 
+               style="width: {{ percentage }}%"
+               id="bar-{{ i }}">
+            {{ "%.1f"|format(percentage) }}%
+          </div>
+        </div>
+        
+        <!-- 교수자만 투표자 명단 확인 -->
+        {% if current_user.role == "professor" and voters.get(i) %}
+        <small class="text-muted" id="voters-{{ i }}">
+          투표자: {{ voters[i]|join(', ') }}
+        </small>
+        {% endif %}
+      </div>
+      {% endfor %}
+      
+      <div class="alert alert-info mt-3">
+        <strong>총 투표 수:</strong> <span id="totalVotes">{{ results.values()|sum }}</span>명
+      </div>
+    {% else %}
+      <p class="text-muted">아직 투표가 없습니다.</p>
+    {% endif %}
+  </div>
+</div>
+
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<script>
+  const socket = io();
+  
+  // 클래스룸 입장
+  socket.emit('join', {classroom_id: {{ classroom.id }}});
+  
+  // 실시간 투표 업데이트
+  socket.on('vote_update', function(data) {
+    if (data.poll_id === {{ poll.id }}) {
+      // 페이지 새로고침으로 결과 업데이트
+      location.reload();
+    }
+  });
+</script>
+{% endblock %}

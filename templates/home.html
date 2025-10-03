@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}홈 | AI 역할극 인성교육{% endblock %}
+
+{% block content %}
+<div class="text-center">
+  <h1>🤖 AI 역할극 인성교육</h1>
+  <p class="lead">AI와 함께하는 역할극을 통해 학생들의 올바른 가치관과 소통 능력을 길러보세요.</p>
+  
+  {% if current_user.is_authenticated %}
+    <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg mt-3">역할극 체험 입장하기</a>
+  {% else %}
+    <a href="{{ url_for('login') }}" class="btn btn-success btn-lg mt-3">로그인 후 시작하기</a>
+  {% endif %}
+</div>
+
+<hr class="my-5">
+
+<div class="row">
+  <div class="col-md-4">
+    <h3>📘 교수자 모드</h3>
+    <p>문제를 출제하고, 학생들의 답변을 모니터링하며 AI 평가 결과를 확인할 수 있습니다.</p>
+  </div>
+  <div class="col-md-4">
+    <h3>👩‍🎓 학생 모드</h3>
+    <p>AI와 역할극 대화를 하며 다양한 상황에서 올바른 태도를 학습할 수 있습니다.</p>
+  </div>
+  <div class="col-md-4">
+    <h3>✨ AI 피드백</h3>
+    <p>학생들의 응답을 AI가 분석하여 인성 교육에 필요한 피드백을 제공합니다.</p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block title %}회원가입{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+  <div class="col-12 col-sm-8 col-md-6 col-lg-4">
+    <div class="card shadow">
+      <div class="card-body p-4">
+        <h2 class="text-center mb-4">회원가입</h2>
+        <form method="POST">
+          <div class="mb-3">
+            <label>아이디 (자신의 이름을 적어주세요.)</label>
+            <input type="text" name="username" class="form-control" placeholder="예: 홍길동" required>
+          </div>
+          <div class="mb-3">
+            <label>비밀번호</label>
+            <input type="password" name="password" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label>역할</label>
+            <select name="role" class="form-select">
+              <option value="student">학생</option>
+              <option value="professor">교수자</option>
+            </select>
+          </div>
+          <button type="submit" class="btn btn-success d-block mx-auto">회원가입</button>
+          <p class="text-center mt-3 mb-0">
+            <a href="{{ url_for('login') }}">이미 계정이 있나요? 로그인</a>
+          </p>  
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
