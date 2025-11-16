@@ -109,8 +109,8 @@
         {% for key, value in evidences.items() %}
           <div class="col-12 col-md-4 mb-3">
             <div class="p-3 border rounded">
-              <div class="d-flex justify-content-between">
-                <span><strong>{{ key }}</strong></span>
+              <div class="p-2 border rounded mb-2">
+                <strong>{{ key }}</strong><br>
                 <span>{{ value }}</span>
               </div>
             </div>
@@ -131,8 +131,8 @@
         {% for key, value in opinions.items() %}
           <div class="col-12 col-md-4 mb-3">
             <div class="p-3 border rounded">
-              <div class="d-flex justify-content-between">
-                <span><strong>{{ key }}</strong></span>
+              <div class="p-2 border rounded mb-2">
+                <strong>{{ key }}</strong><br>
                 <span>{{ value }}</span>
               </div>
             </div>
@@ -156,6 +156,28 @@
       // 페이지 새로고침으로 결과 업데이트
       location.reload();
     }
+  });
+  document.addEventListener("DOMContentLoaded", () => {
+    const cards = document.querySelectorAll(".evidence-card");
+
+    // 색상 팔레트
+    const colors = [
+      "#FFEBEE", "#FFF3E0", "#FFFDE7",
+      "#E8F5E9", "#E3F2FD", "#EDE7F6"
+    ];
+
+    cards.forEach(card => {
+      const key = card.querySelector("strong").innerText;
+
+      // key를 숫자로 변환 (hash)
+      let hash = 0;
+      for (let i = 0; i < key.length; i++) {
+        hash = key.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const index = Math.abs(hash) % colors.length;
+
+      card.style.backgroundColor = colors[index];
+    });
   });
 </script>
 {% endblock %}
