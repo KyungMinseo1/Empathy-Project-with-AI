@@ -355,7 +355,7 @@ def delete_poll(poll_id):
         # 2. Poll 삭제 (Vote는 모델에 설정된 cascade에 의해 자동 삭제됨)
         db.session.delete(poll)
         db.session.commit()
-        flash(f"투표 '{poll.name}'과 모든 관련 데이터가 삭제되었습니다.", "success")
+        flash(f"투표 '{poll.id}'과 모든 관련 데이터가 삭제되었습니다.", "success")
     except Exception as e:
         db.session.rollback()
         flash(f"투표 삭제 중 오류가 발생했습니다: {e}", "danger")
