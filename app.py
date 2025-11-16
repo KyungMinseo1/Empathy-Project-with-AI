@@ -2,7 +2,7 @@ import os
 import ast
 import json
 import random
-import prompt
+import prompt, prompt_for_selection
 import string
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
@@ -61,6 +61,8 @@ class Poll(db.Model):
     classroom_id = db.Column(db.Integer, db.ForeignKey('classroom.id'), nullable=False)
     question = db.Column(db.String(500), nullable=False)
     options = db.Column(db.Text, nullable=False)  # JSON 형태로 저장
+    ai_option = db.Column(db.Integer, nullable=False)
+    ai_evidence = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True)
 
@@ -72,6 +74,8 @@ class Vote(db.Model):
     poll_id = db.Column(db.Integer, db.ForeignKey('poll.id'), nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     option_index = db.Column(db.Integer, nullable=False)
+    evidence = db.Column(db.Text, nullable=False)
+    ai_opinion = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     user = db.relationship('User', backref='votes')
@@ -241,7 +245,7 @@ def create_poll(classroom_id):
     if request.form.get('action_type') == 'create':
         topic = request.form["topic"]
         try:
-            ai_response_str = prompt.generate_situation(topic)            
+            ai_response_str = prompt.generate_situation(topic)          
             output_list = ast.literal_eval(ai_response_str)
             
             # AI 결과와 함께 템플릿을 redirect로 전달 (URL 파라미터로 전달)
@@ -261,22 +265,34 @@ def create_poll(classroom_id):
     elif request.form.get('action_type') == 'final':
         question = request.form["question"]
         options = request.form.getlist("options[]")
-        
-        poll = Poll(
-            classroom_id=classroom_id,
-            question=question,
-            options=json.dumps(options, ensure_ascii=False)
-        )
-        db.session.add(poll)
-        db.session.commit()
-        
-        socketio.emit('new_poll', {
-            'poll_id': poll.id,
-            'question': question
-        }, room=f'classroom_{classroom_id}')
-        
-        flash("투표가 생성되었습니다!", "success")
-        return redirect(url_for("classroom_view", classroom_id=classroom_id))
+        context_list = [question] + options
+        context = str(context_list)
+        try:
+            ai_option_raw = prompt_for_selection.generate_selection(context)
+            # AI 출력 정리 (예: ``` 제거, 줄바꿈 제거)
+            cleaned = ai_option_raw.strip().replace("```", "").replace("\n", "")
+            ai_output_list = ast.literal_eval(cleaned)
+            
+            poll = Poll(
+                classroom_id=classroom_id,
+                question=question,
+                options=json.dumps(options, ensure_ascii=False),
+                ai_option=ai_output_list[0],
+                ai_evidence=ai_output_list[1]
+            )
+            db.session.add(poll)
+            db.session.commit()
+            
+            socketio.emit('new_poll', {
+                'poll_id': poll.id,
+                'question': question
+            }, room=f'classroom_{classroom_id}')
+            
+            flash("투표가 생성되었습니다!", "success")
+            return redirect(url_for("classroom_view", classroom_id=classroom_id))
+        except Exception as e:
+            flash(f"AI 응답 파싱 실패 또는 생성 중 오류가 발생했습니다. (오류: {e})", "danger")
+            return redirect(url_for("classroom_view", classroom_id=classroom_id))
     
     # 폼에서 아무 버튼도 눌리지 않은 경우
     return redirect(url_for("classroom_view", classroom_id=classroom_id))
@@ -293,12 +309,26 @@ def poll_view(poll_id):
     votes = Vote.query.filter_by(poll_id=poll_id).all()
     results = {}
     voters = {}
+    evidences = {}
+    opinions = {}
+
+    if poll.ai_option not in results:
+        results[poll.ai_option] = 0
+        voters[poll.ai_option] = []
+    results[poll.ai_option] += 1
+    voters[poll.ai_option].append('AI')
+    evidences['AI'] = poll.ai_evidence
+
     for vote in votes:
         if vote.option_index not in results:
             results[vote.option_index] = 0
             voters[vote.option_index] = []
+            evidences[vote.user.username] = None
+            opinions[vote.user.username] = None
         results[vote.option_index] += 1
         voters[vote.option_index].append(vote.user.username)
+        evidences[vote.user.username] = vote.evidence
+        opinions[vote.user.username] = vote.ai_opinion
     
     return render_template("poll.html", 
                            poll=poll, 
@@ -306,20 +336,50 @@ def poll_view(poll_id):
                            options=options, 
                            existing_vote=existing_vote,
                            results=results,
-                           voters=voters)
+                           voters=voters,
+                           evidences=evidences,
+                           opinions=opinions)
+
+@app.route("/delete_poll/<int:poll_id>", methods=["POST"])
+@login_required
+def delete_poll(poll_id):
+    poll = Poll.query.get_or_404(poll_id)
+    classroom = Classroom.query.get_or_404(poll.classroom_id)
+    
+    # 1. 권한 확인: 교수자인지, 그리고 본인이 생성한 클래스룸인지 확인
+    if current_user.role != "professor" or classroom.professor_id != current_user.id:
+        flash("클래스룸을 삭제할 권한이 없거나, 본인이 생성한 클래스룸이 아닙니다.", "danger")
+        return redirect(url_for("classroom", classroom_id=classroom.id))
+
+    try:
+        # 2. Poll 삭제 (Vote는 모델에 설정된 cascade에 의해 자동 삭제됨)
+        db.session.delete(poll)
+        db.session.commit()
+        flash(f"투표 '{poll.name}'과 모든 관련 데이터가 삭제되었습니다.", "success")
+    except Exception as e:
+        db.session.rollback()
+        flash(f"투표 삭제 중 오류가 발생했습니다: {e}", "danger")
+
+    return redirect(url_for("classroom", classroom_id=classroom.id))
 
 @app.route("/poll/<int:poll_id>/vote", methods=["POST"])
 @login_required
 def submit_vote(poll_id):
     poll = Poll.query.get_or_404(poll_id)
     option_index = int(request.form["option"])
+    evidence = str(request.form["evidence"])
+    ai_opinion = str(request.form["ai_opinion"])
     
     existing_vote = Vote.query.filter_by(poll_id=poll_id, user_id=current_user.id).first()
     
     if existing_vote:
         existing_vote.option_index = option_index
+        existing_vote.evidence = evidence
+        existing_vote.ai_opinion = ai_opinion
+
     else:
-        vote = Vote(poll_id=poll_id, user_id=current_user.id, option_index=option_index)
+        vote = Vote(poll_id=poll_id, user_id=current_user.id, option_index=option_index,
+                    evidence=evidence, ai_opinion=ai_opinion)
         db.session.add(vote)
     
     db.session.commit()
@@ -327,7 +387,9 @@ def submit_vote(poll_id):
     socketio.emit('vote_update', {
         'poll_id': poll_id,
         'user': current_user.username,
-        'option': option_index
+        'option': option_index,
+        'evidence':evidence,
+        'ai_opinion':ai_opinion
     }, room=f'classroom_{poll.classroom_id}')
     
     flash("투표가 완료되었습니다!", "success")

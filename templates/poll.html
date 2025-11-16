@@ -28,6 +28,14 @@
             </label>
           </div>
           {% endfor %}
+          <div class="form-check mb-2">
+            <label class="form-label">왜 그렇게 생각했나요?</label>
+            <textarea class="form-control" name="evidence" id="evidence" rows="3" required></textarea>
+          </div>
+          <div class="form-check mb-2">
+            <label class="form-label">AI 친구에게 해주고 싶은 말은 무엇인가요?</label>
+            <textarea class="form-control" name="ai_opinion" id="ai_opinion" rows="3" required></textarea>
+          </div>
         </div>
         
         {% if existing_vote %}
@@ -87,6 +95,50 @@
       </div>
     {% else %}
       <p class="text-muted">아직 투표가 없습니다.</p>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0">선택 이유</h5>
+  </div>
+  <div class="card-body" id="evidencesContainer">
+    {% if evidences %}
+      <div class="row">
+        {% for key, value in evidences.items() %}
+          <div class="col-12 col-md-4 mb-3">
+            <div class="p-3 border rounded">
+              <div class="d-flex justify-content-between">
+                <span><strong>{{ key }}</strong></span>
+                <span>{{ value }}</span>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h5 class="mb-0">AI 친구에게 한마디</h5>
+  </div>
+  <div class="card-body" id="opinionssContainer">
+    {% if opinions %}
+      <div class="row">
+        {% for key, value in opinions.items() %}
+          <div class="col-12 col-md-4 mb-3">
+            <div class="p-3 border rounded">
+              <div class="d-flex justify-content-between">
+                <span><strong>{{ key }}</strong></span>
+                <span>{{ value }}</span>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
     {% endif %}
   </div>
 </div>
