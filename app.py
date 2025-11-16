@@ -349,7 +349,7 @@ def delete_poll(poll_id):
     # 1. 권한 확인: 교수자인지, 그리고 본인이 생성한 클래스룸인지 확인
     if current_user.role != "professor" or classroom.professor_id != current_user.id:
         flash("클래스룸을 삭제할 권한이 없거나, 본인이 생성한 클래스룸이 아닙니다.", "danger")
-        return redirect(url_for("classroom", classroom_id=classroom.id))
+        return redirect(url_for("classroom_view", classroom_id=classroom.id))
 
     try:
         # 2. Poll 삭제 (Vote는 모델에 설정된 cascade에 의해 자동 삭제됨)
@@ -360,7 +360,7 @@ def delete_poll(poll_id):
         db.session.rollback()
         flash(f"투표 삭제 중 오류가 발생했습니다: {e}", "danger")
 
-    return redirect(url_for("classroom", classroom_id=classroom.id))
+    return redirect(url_for("classroom_view", classroom_id=classroom.id))
 
 @app.route("/poll/<int:poll_id>/vote", methods=["POST"])
 @login_required

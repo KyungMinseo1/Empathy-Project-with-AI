@@ -43,5 +43,5 @@ def generate_selection(context):
   return response.text
 
 if __name__=="__main__":
-  result = generate_situation('지우개 훔치기')
+  result = generate_selectionx('지우개 훔치기')
   print(result)
