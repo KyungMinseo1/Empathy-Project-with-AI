@@ -270,7 +270,6 @@ def create_poll(classroom_id):
             for k, v in enumerate(options_list)
         }
         options_dict_str = str(options_dict)
-        options_list_str = str(options_list)
         try:
             ai_option_raw = prompt_for_selection.generate_selection(question, options_dict_str)
             # AI 출력 정리 (예: ``` 제거, 줄바꿈 제거)
@@ -280,7 +279,7 @@ def create_poll(classroom_id):
             poll = Poll(
                 classroom_id=classroom_id,
                 question=question,
-                options=json.dumps(options_list_str, ensure_ascii=False),
+                options=json.dumps(options_list, ensure_ascii=False),
                 ai_option=ai_output_list[0],
                 ai_evidence=ai_output_list[1]
             )
