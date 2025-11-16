@@ -264,11 +264,14 @@ def create_poll(classroom_id):
     # 'final' 버튼을 눌렀을 경우 (최종 제출)
     elif request.form.get('action_type') == 'final':
         question = request.form["question"]
-        options = request.form.getlist("options[]")
-        context_list = [question] + options
-        context = str(context_list)
+        options_list = request.form.getlist("options[]")
+        options_dict = {
+            k:v
+            for k, v in enumerate(options_list)
+        }
+        options = str(options_dict)
         try:
-            ai_option_raw = prompt_for_selection.generate_selection(context)
+            ai_option_raw = prompt_for_selection.generate_selection(question, options)
             # AI 출력 정리 (예: ``` 제거, 줄바꿈 제거)
             cleaned = ai_option_raw.strip().replace("```", "").replace("\n", "")
             ai_output_list = ast.literal_eval(cleaned)
