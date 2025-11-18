@@ -16,25 +16,30 @@
   <div class="card-body">
     {% if current_user.role == "student" and poll.is_active %}
       <!-- 학생 투표 폼 -->
-      <form method="POST" action="{{ url_for('submit_vote', poll_id=poll.id) }}">
+      <form id="voteForm" method="POST" action="{{ url_for('submit_vote', poll_id=poll.id) }}">
         <div class="mb-3">
-          {% for i in range(options|length) %}
           <div class="form-check mb-2">
-            <input class="form-check-input" type="radio" name="option" id="option{{ i }}" 
-                   value="{{ i }}" required
-                   {% if existing_vote and existing_vote.option_index == i %}checked{% endif %}>
-            <label class="form-check-label fs-6" for="option{{ i }}">
-              {{ options[i] }}
-            </label>
+            <label class="form-label">나는 어떻게 행동해야 할까요?</label>
+            {% for i in range(options|length) %}
+              <input class="form-check-input" type="radio" name="option" id="option{{ i }}" 
+                    value="{{ i }}" required
+                    {% if existing_vote and existing_vote.option_index == i %}checked{% endif %}>
+              <label class="form-check-label fs-6" for="option{{ i }}">
+                {{ options[i] }}
+              </label>
+            {% endfor %}
           </div>
-          {% endfor %}
           <div class="form-check mb-2">
             <label class="form-label">왜 그렇게 생각했나요?</label>
-            <textarea class="form-control" name="evidence" id="evidence" rows="3" required></textarea>
+            <textarea class="form-control" name="evidence" id="evidence" rows="3" required>
+              {{ existing_vote.evidence if existing_vote else '' }}
+            </textarea>
           </div>
           <div class="form-check mb-2">
             <label class="form-label">AI 친구에게 해주고 싶은 말은 무엇인가요?</label>
-            <textarea class="form-control" name="ai_opinion" id="ai_opinion" rows="3" required></textarea>
+            <textarea class="form-control" name="ai_opinion" id="ai_opinion" rows="3" required>
+              {{ existing_vote.ai_opinion if existing_vote else '' }}
+            </textarea>
           </div>
         </div>
         
@@ -146,30 +151,69 @@
 <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 <script>
   const socket = io();
-  
-  // 클래스룸 입장
-  socket.emit('join', {classroom_id: {{ classroom.id }}});
-  
-  // 실시간 투표 업데이트
-  socket.on('vote_update', function(data) {
-    if (data.poll_id === {{ poll.id }}) {
-      // 페이지 새로고침으로 결과 업데이트
-      location.reload();
-    }
-  });
-  document.addEventListener("DOMContentLoaded", () => {
-    const cards = document.querySelectorAll(".evidence-card");
+  let isFormActive = false;
 
-    // 색상 팔레트
+  document.addEventListener("DOMContentLoaded", () => {
+    // 클래스룸 입장
+    socket.emit('join', {classroom_id: {{ classroom.id }}});
+    
+    // 실시간 투표 업데이트
+    socket.on('vote_update', function(data) {
+      if (parseInt(data.poll_id) === {{ poll.id }}) {
+        if (!isFormActive) { 
+          console.log("투표 업데이트 수신, 새로고침 실행.");
+          location.reload();
+        } else {
+          console.log("폼 작성 중이므로 새로고침 방지.");
+        }
+      }
+    });
+
+    socket.on('connect_error', function(error) {
+      console.error('소켓 연결 오류:', error);
+    });
+
+    // 투표 폼 처리
+    const voteForm = document.getElementById('voteForm');
+
+    if (voteForm) {
+      const formControls = voteForm.querySelectorAll('input, textarea');
+      
+      formControls.forEach(control => {
+        control.addEventListener('focus', () => {
+          isFormActive = true;
+        });
+        
+        // blur 이벤트 추가: 포커스를 잃었을 때
+        control.addEventListener('blur', () => {
+          // 짧은 지연 후 다른 폼 요소에 포커스가 없으면 비활성화
+          setTimeout(() => {
+            if (!voteForm.contains(document.activeElement)) {
+              isFormActive = false;
+            }
+          }, 100);
+        });
+      });
+      
+      voteForm.addEventListener('submit', () => {
+        isFormActive = false; 
+      });
+    }
+
+    // 카드 색상 지정 (실제 존재하는 클래스/요소로 수정 필요)
+    const cards = document.querySelectorAll(".p-3.border.rounded");
+
     const colors = [
       "#FFEBEE", "#FFF3E0", "#FFFDE7",
       "#E8F5E9", "#E3F2FD", "#EDE7F6"
     ];
 
     cards.forEach(card => {
-      const key = card.querySelector("strong").innerText;
+      const strongElement = card.querySelector("strong");
+      if (!strongElement) return; // 안전성 체크
+      
+      const key = strongElement.innerText;
 
-      // key를 숫자로 변환 (hash)
       let hash = 0;
       for (let i = 0; i < key.length; i++) {
         hash = key.charCodeAt(i) + ((hash << 5) - hash);
