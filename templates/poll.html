@@ -34,16 +34,12 @@
 
         <fieldset class="mb-4 p-3 border rounded">
           <legend class="fs-5 fw-bold mb-3">왜 그렇게 생각했나요? (서술)</legend>
-          <textarea class="form-control" name="evidence" id="evidence" rows="3" required>
-            {{ existing_vote.evidence if existing_vote else '' }}
-          </textarea>
+          <textarea class="form-control" name="evidence" id="evidence" rows="3" required>{{ existing_vote.evidence if existing_vote else '' }}</textarea>
         </fieldset>
 
         <fieldset class="mb-4 p-3 border rounded">
           <legend class="fs-5 fw-bold mb-3">AI 친구에게 해주고 싶은 말은 무엇인가요? (서술)</legend>
-          <textarea class="form-control" name="ai_opinion" id="ai_opinion" rows="3" required>
-            {{ existing_vote.ai_opinion if existing_vote else '' }}
-          </textarea>
+          <textarea class="form-control" name="ai_opinion" id="ai_opinion" rows="3" required>{{ existing_vote.ai_opinion if existing_vote else '' }}</textarea>
         </fieldset>
         
         {% if existing_vote %}
