@@ -17,31 +17,34 @@
     {% if current_user.role == "student" and poll.is_active %}
       <!-- 학생 투표 폼 -->
       <form id="voteForm" method="POST" action="{{ url_for('submit_vote', poll_id=poll.id) }}">
-        <div class="mb-3">
-          <div class="form-check mb-2">
-            <label class="form-label">나는 어떻게 행동해야 할까요?</label>
-            {% for i in range(options|length) %}
+        <fieldset class="mb-4 p-3 border rounded">
+          <legend class="fs-5 fw-bold mb-3">나는 어떻게 행동해야 할까요? (선택)</legend>
+          
+          {% for i in range(options|length) %}
+            <div class="form-check mb-2">
               <input class="form-check-input" type="radio" name="option" id="option{{ i }}" 
-                    value="{{ i }}" required
-                    {% if existing_vote and existing_vote.option_index == i %}checked{% endif %}>
+                  value="{{ i }}" required
+                  {% if existing_vote and existing_vote.option_index == i %}checked{% endif %}>
               <label class="form-check-label fs-6" for="option{{ i }}">
                 {{ options[i] }}
               </label>
-            {% endfor %}
-          </div>
-          <div class="form-check mb-2">
-            <label class="form-label">왜 그렇게 생각했나요?</label>
-            <textarea class="form-control" name="evidence" id="evidence" rows="3" required>
-              {{ existing_vote.evidence if existing_vote else '' }}
-            </textarea>
-          </div>
-          <div class="form-check mb-2">
-            <label class="form-label">AI 친구에게 해주고 싶은 말은 무엇인가요?</label>
-            <textarea class="form-control" name="ai_opinion" id="ai_opinion" rows="3" required>
-              {{ existing_vote.ai_opinion if existing_vote else '' }}
-            </textarea>
-          </div>
-        </div>
+            </div>
+          {% endfor %}
+        </fieldset>
+
+        <fieldset class="mb-4 p-3 border rounded">
+          <legend class="fs-5 fw-bold mb-3">왜 그렇게 생각했나요? (서술)</legend>
+          <textarea class="form-control" name="evidence" id="evidence" rows="3" required>
+            {{ existing_vote.evidence if existing_vote else '' }}
+          </textarea>
+        </fieldset>
+
+        <fieldset class="mb-4 p-3 border rounded">
+          <legend class="fs-5 fw-bold mb-3">AI 친구에게 해주고 싶은 말은 무엇인가요? (서술)</legend>
+          <textarea class="form-control" name="ai_opinion" id="ai_opinion" rows="3" required>
+            {{ existing_vote.ai_opinion if existing_vote else '' }}
+          </textarea>
+        </fieldset>
         
         {% if existing_vote %}
           <button type="submit" class="btn btn-warning btn-md">투표 변경하기</button>
